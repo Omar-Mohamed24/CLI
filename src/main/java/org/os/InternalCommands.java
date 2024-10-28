@@ -5,6 +5,7 @@ public class InternalCommands
     public static void exit()
     {
         System.out.println("Exiting CLI...");
+        System.exit(0);
     }
 
     public static void help()

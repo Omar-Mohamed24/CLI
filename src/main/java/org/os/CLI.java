@@ -4,92 +4,129 @@ import java.util.Arrays;
 
 public class CLI
 {
-
     public static void main(String[] args)
     {
-        Scanner scanner = new Scanner(System.in);
-        boolean running = true;
-
-        while (running)
+        try (Scanner scanner = new Scanner(System.in))
         {
-            String dir= System.getProperty("user.dir");
-            System.out.print(dir + ">");  // Command prompt
-            String input = scanner.nextLine().trim(); // Read input and trim whitespace
-
-            if (input.isEmpty())
+            while (true)
             {
-                continue;
-            }
-            String[] commandParts = input.split(" (?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
-            String command = commandParts[0].toLowerCase();
+                String dir = System.getProperty("user.dir");
+                System.out.print(dir + ">");  // Command prompt
+                String input = scanner.nextLine().trim(); // Read input and trim whitespace
 
-            switch (command)
-            {
-                case "pwd":
-                    SystemCommands.pwd();
-                    break;
+                if (input.isEmpty())
+                {
+                    continue;
+                }
+                String[] commandParts = input.split(" (?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+                String command = commandParts[0].toLowerCase();
 
-                case "cd":
-                    if (commandParts.length < 2)
-                    {
-                        System.out.println("Usage: cd <directory>");
-                    }
-                    else
-                    {
-                        // Join everything after "cd" to handle directory paths with spaces
-                        String path = String.join(" ", Arrays.copyOfRange(commandParts, 1, commandParts.length)).trim();
-                        path = path.replace("\"", ""); // Remove quotes if any
-                        SystemCommands.cd(path);
-                    }
-                    break;
+                switch (command)
+                {
+                    case "pwd":
+                        SystemCommands.pwd();
+                        break;
 
-                case "ls":
-                    SystemCommands.ls(commandParts.length > 1 ? commandParts : new String[]{});
-                    break;
+                    case "cd":
+                        if (commandParts.length < 2)
+                        {
+                            System.out.println("Usage: cd <directory>");
+                        }
+                        else
+                        {
+                            // Join everything after "cd" to handle directory paths with spaces
+                            String path = String.join(" ", Arrays.copyOfRange(commandParts, 1, commandParts.length)).trim();
+                            path = path.replace("\"", ""); // Remove quotes if any
+                            SystemCommands.cd(path);
+                        }
+                        break;
 
-                case "mkdir":
-                    if (commandParts.length < 2)
-                    {
-                        System.out.println("Usage: mkdir <directory_name>");
-                    }
-                    else
-                    {
-                        // Join everything after "mkdir" to handle directory names with spaces
-                        String dirPath = String.join(" ", Arrays.copyOfRange(commandParts, 1, commandParts.length)).trim();
-                        SystemCommands.mkdir(dirPath);
-                    }
-                    break;
+                    case "ls":
+                        SystemCommands.ls(commandParts.length > 1 ? commandParts : new String[]{});
+                        break;
 
-                case "rmdir":
-                    if (commandParts.length < 2)
-                    {
-                        System.out.println("Usage: rmdir <directory_name>");
-                    }
-                    else
-                    {
-                        // Join everything after "rmdir" to handle directory paths with spaces
-                        String dirPath = String.join(" ", Arrays.copyOfRange(commandParts, 1, commandParts.length)).trim();
-                        dirPath = dirPath.replace("\"", ""); // Remove quotes if any
-                        SystemCommands.rmdir(dirPath);
-                    }
-                    break;
+                    case "mkdir":
+                        if (commandParts.length < 2)
+                        {
+                            System.out.println("Usage: mkdir <directory_name>");
+                        }
+                        else
+                        {
+                            // Join everything after "mkdir" to handle directory names with spaces
+                            String dirPath = String.join(" ", Arrays.copyOfRange(commandParts, 1, commandParts.length)).trim();
+                            SystemCommands.mkdir(dirPath);
+                        }
+                        break;
 
-                case "exit":
-                    InternalCommands.exit();
-                    running = false;
-                    break;
+                    case "rmdir":
+                        if (commandParts.length < 2)
+                        {
+                            System.out.println("Usage: rmdir <directory_name>");
+                        }
+                        else
+                        {
+                            // Join everything after "rmdir" to handle directory paths with spaces
+                            String dirPath = String.join(" ", Arrays.copyOfRange(commandParts, 1, commandParts.length)).trim();
+                            dirPath = dirPath.replace("\"", ""); // Remove quotes if any
+                            SystemCommands.rmdir(dirPath);
+                        }
+                        break;
 
-                case "help":
-                    InternalCommands.help();
-                    break;
+                    case "touch":
+                        if (commandParts.length < 2)
+                        {
+                            System.out.println("Usage: touch <file_name>");
+                        }
+                        else
+                        {
+                            String[] filePaths = Arrays.copyOfRange(commandParts, 1, commandParts.length);
+                            for (int i = 0; i < filePaths.length; i++)
+                            {
+                                filePaths[i] = filePaths[i].replace("\"", "").trim(); // Remove quotes and trim spaces
+                            }
+                            SystemCommands.touch(filePaths);
+                        }
+                        break;
 
-                default:
-                    handleUnknownCommand(command);
-                    break;
+                    case "mv":
+                        if (commandParts.length < 2)
+                        {
+                            System.out.println("Usage: mv <source_files> <destination>");
+                        }
+                        else
+                        {
+                            // Join everything after "mv" to handle multiple files and destination
+                            String[] filesToMove = Arrays.copyOfRange(commandParts, 1, commandParts.length);
+                            SystemCommands.mv(filesToMove);
+                        }
+                        break;
+
+                    case "rm":
+                        if (commandParts.length < 2)
+                        {
+                            System.out.println("Usage: rm <file(s)/directory(s)>");
+                        }
+                        else
+                        {
+                            String[] filesTo_del = Arrays.copyOfRange(commandParts, 1, commandParts.length);
+                            SystemCommands.rm(filesTo_del);
+                        }
+                        break;
+
+                    case "exit":
+                        InternalCommands.exit();
+                        return;
+
+                    case "help":
+                        InternalCommands.help();
+                        break;
+
+                    default:
+                        handleUnknownCommand(command);
+                        break;
+                }
             }
         }
-
-        scanner.close();
     }
 
     private static int levenshteinDistance(String a, String b)
