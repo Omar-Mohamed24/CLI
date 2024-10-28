@@ -394,5 +394,148 @@ public class SystemCommands
         }
     }
 
+    public static void cat(String[] commandParts)
+    {
+        // If no arguments are provided, read from user input
+        if (commandParts.length < 2)
+        {
+            System.out.println("No files specified. Reading from standard input (Ctrl+D to end):");
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in)))
+            {
+                String line;
+                while (true)
+                {
+                    line = reader.readLine();
+                    if (line.equals("end"))
+                    {
+                        break; // Stop reading input when "end" is entered
+                    }
+                    System.out.println(line); // Write each line to the output file
+                }
+            }
+            catch (IOException e)
+            {
+                System.out.println("Error reading input: " + e.getMessage());
+            }
+            return;
+        }
 
+        // Process provided file arguments
+        for (int i = 1; i < commandParts.length; i++)
+        {
+            String filePath = commandParts[i].replace("\"", "").trim(); // Remove quotes if any
+            File file = new File(filePath);
+
+            if (!file.exists())
+            {
+                System.out.println("File does not exist: " + filePath);
+                continue; // Skip to the next file
+            }
+
+            if (file.isDirectory())
+            {
+                System.out.println("Cannot cat a directory: " + filePath);
+                continue; // Skip directories
+            }
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(file)))
+            {
+                String line;
+                while ((line = reader.readLine()) != null)
+                {
+                    System.out.println(line); // Print each line
+                }
+            }
+            catch (IOException e)
+            {
+                System.out.println("Error reading file: " + filePath + " - " + e.getMessage());
+            }
+        }
+    }
+
+    public static void redirectOutput(String command, String[] commandParts, String outputFileName)
+    {
+        try (PrintStream out = new PrintStream(new FileOutputStream(outputFileName)))
+        {
+            switch (command)
+            {
+                case "pwd" -> out.println(System.getProperty("user.dir"));
+
+                case "ls" ->
+                {
+                    File currentDir = new File(System.getProperty("user.dir"));
+                    String[] files = currentDir.list();
+                    if (files != null)
+                    {
+                        for (String file : files)
+                        {
+                            out.println(file);
+                        }
+                    }
+                    else
+                    {
+                        out.println("Error listing files in the directory.");
+                    }
+                }
+
+                case "cat" ->
+                {
+                    // Handle 'cat' command output redirection
+                    if (commandParts.length < 2)
+                    {
+                        // No files specified, read from standard input
+                        System.out.println("No files specified. Reading from standard input (Ctrl+D to end):");
+                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in)))
+                        {
+                            String line;
+                            while (true)
+                            {
+                                line = reader.readLine();
+                                if (line.equals("end"))
+                                {
+                                    break; // Stop reading input when "end" is entered
+                                }
+                                out.println(line); // Write each line to the output file
+                            }
+                        }
+                        catch (IOException e)
+                        {
+                            System.out.println("Error reading input: " + e.getMessage());
+                        }
+                    }
+                    for (int i = 1; i < commandParts.length; i++)
+                    {
+                        String fileName = commandParts[i].replace("\"", "").trim();
+                        File file = new File(fileName);
+                        if (file.exists())
+                        {
+                            try (BufferedReader reader = new BufferedReader(new FileReader(file)))
+                            {
+                                String line;
+                                while ((line = reader.readLine()) != null)
+                                {
+                                    out.println(line);
+                                }
+                            }
+                            catch (IOException e)
+                            {
+                                out.println("Error reading file: " + fileName);
+                            }
+                        }
+                        else
+                        {
+                            out.println("File not found: " + fileName);
+                        }
+                    }
+                }
+
+                case null, default ->
+                        System.out.println("Output redirection is only supported for pwd, ls, and cat commands.");
+            }
+        }
+        catch (FileNotFoundException e)
+        {
+            System.out.println("Error: Unable to create output file: " + outputFileName);
+        }
+    }
 }
