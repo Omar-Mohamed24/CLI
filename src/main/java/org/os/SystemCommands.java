@@ -144,6 +144,10 @@ public class SystemCommands
             }
             else
             {
+                if (dir.getAbsolutePath().equals(System.getProperty("user.dir")))
+                {
+                    changeToParentDirectory();
+                }
                 if (dir.delete())
                 {
                     System.out.println("Directory deleted: " + dirPath);
@@ -335,6 +339,10 @@ public class SystemCommands
                     // Directory is not empty
                     if (i > 0 && "-r".equals(commandParts[i - 1]))
                     {
+                        if (file.getAbsolutePath().equals(System.getProperty("user.dir")))
+                        {
+                            changeToParentDirectory();
+                        }
                         // If -r is before the directory, delete it recursively
                         deleteDirectoryRecursively(file);
                     }
