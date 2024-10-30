@@ -394,28 +394,20 @@ public class SystemCommands
         }
     }
 
-    public static void cat(String[] commandParts)
+    public static void cat(String[] commandParts, Scanner scanner)
     {
-        // If no arguments are provided, read from user input
+        // Check if files are provided or read from input
         if (commandParts.length < 2)
         {
-            System.out.println("No files specified. Reading from standard input (Ctrl+D to end):");
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in)))
+            System.out.println("No files specified. Reading from standard input (Type 'exit' to stop):");
+            while (true)
             {
-                String line;
-                while (true)
-                {
-                    line = reader.readLine();
-                    if (line.equals("end"))
-                    {
-                        break; // Stop reading input when "end" is entered
-                    }
-                    System.out.println(line); // Write each line to the output file
+                String line = scanner.nextLine();
+                if ("exit".equalsIgnoreCase(line.trim()))
+                { // Changed to 'exit'
+                    break; // Exit the input loop instead of terminating the program
                 }
-            }
-            catch (IOException e)
-            {
-                System.out.println("Error reading input: " + e.getMessage());
+                System.out.println(line); // Output to standard output
             }
             return;
         }
@@ -453,7 +445,7 @@ public class SystemCommands
         }
     }
 
-    public static void redirectOutput(String command, String[] commandParts, String outputFileName)
+    public static void redirectOutput(String command, String[] commandParts, String outputFileName, Scanner scanner)
     {
         try (PrintStream out = new PrintStream(new FileOutputStream(outputFileName)))
         {
@@ -474,7 +466,7 @@ public class SystemCommands
                     }
                     else
                     {
-                        out.println("Error listing files in the directory.");
+                        System.out.println("Error listing files in the directory.");
                     }
                 }
 
@@ -483,25 +475,17 @@ public class SystemCommands
                     // Handle 'cat' command output redirection
                     if (commandParts.length < 2)
                     {
-                        // No files specified, read from standard input
-                        System.out.println("No files specified. Reading from standard input (Ctrl+D to end):");
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in)))
+                        System.out.println("No files specified. Reading from standard input (Type 'exit' to stop):");
+                        while (true)
                         {
-                            String line;
-                            while (true)
-                            {
-                                line = reader.readLine();
-                                if (line.equals("end"))
-                                {
-                                    break; // Stop reading input when "end" is entered
-                                }
-                                out.println(line); // Write each line to the output file
+                            String line = scanner.nextLine();
+                            if ("exit".equalsIgnoreCase(line.trim()))
+                            { // Allow user to exit the loop
+                                break; // Exit the input loop instead of terminating the program
                             }
+                            out.println(line); // Write the input to the output file
                         }
-                        catch (IOException e)
-                        {
-                            System.out.println("Error reading input: " + e.getMessage());
-                        }
+                        return; // Return after reading from input
                     }
                     for (int i = 1; i < commandParts.length; i++)
                     {
@@ -519,12 +503,12 @@ public class SystemCommands
                             }
                             catch (IOException e)
                             {
-                                out.println("Error reading file: " + fileName);
+                                System.out.println("Error reading file: " + fileName);
                             }
                         }
                         else
                         {
-                            out.println("File not found: " + fileName);
+                            System.out.println("File not found: " + fileName);
                         }
                     }
                 }
@@ -536,6 +520,222 @@ public class SystemCommands
         catch (FileNotFoundException e)
         {
             System.out.println("Error: Unable to create output file: " + outputFileName);
+        }
+    }
+
+    public static void redirectOutput_ex(String command, String[] commandParts, String outputFileName, Scanner scanner)
+    {
+        File outputFile = new File(outputFileName);
+
+        // Check if the file exists before attempting to append
+        if (!outputFile.exists())
+        {
+            System.out.println("Error: Output file does not exist.");
+            return; // Exit the method if the file does not exist
+        }
+
+        try (PrintStream out = new PrintStream(new FileOutputStream(outputFile, true)))
+        { // true for append
+            switch (command)
+            {
+                case "pwd" -> out.println(System.getProperty("user.dir"));
+
+                case "ls" ->
+                {
+                    File currentDir = new File(System.getProperty("user.dir"));
+                    String[] files = currentDir.list();
+                    if (files != null)
+                    {
+                        for (String file : files)
+                        {
+                            out.println(file);
+                        }
+                    }
+                    else
+                    {
+                        System.out.println("Error listing files in the directory.");
+                    }
+                }
+
+                case "cat" ->
+                {
+                    if (commandParts.length < 2)
+                    {
+                        System.out.println("No files specified. Reading from standard input (Type 'exit' to stop):");
+                        while (true)
+                        {
+                            String line = scanner.nextLine();
+                            if ("exit".equalsIgnoreCase(line.trim()))
+                            {
+                                break; // Exit the input loop
+                            }
+                            out.println(line); // Append input to the output file
+                        }
+                        return; // Return after reading from input
+                    }
+
+                    // Handle file reading for 'cat'
+                    for (int i = 1; i < commandParts.length; i++)
+                    {
+                        String filePath = commandParts[i].replace("\"", "").trim();
+                        File file = new File(filePath);
+                        if (file.exists())
+                        {
+                            try (BufferedReader reader = new BufferedReader(new FileReader(file)))
+                            {
+                                String line;
+                                while ((line = reader.readLine()) != null)
+                                {
+                                    out.println(line); // Append the file contents to the output file
+                                }
+                            }
+                            catch (IOException e)
+                            {
+                                System.out.println("Error reading file: " + filePath);
+                            }
+                        }
+                        else
+                        {
+                            System.out.println("File not found: " + filePath);
+                        }
+                    }
+                }
+
+                default -> System.out.println("Command not recognized for output redirection.");
+            }
+        }
+        catch (FileNotFoundException e)
+        {
+            System.out.println("Error: Output file could not be created or found.");
+        }
+    }
+
+    public static void pipe(String[] commandParts)
+    {
+        // Split command parts into left and right commands based on the pipe
+        String[] leftCommandParts = Arrays.copyOfRange(commandParts, 0, commandParts.length - 1);
+        String[] rightCommandParts = new String[]{commandParts[commandParts.length - 1]}; // Assuming one command after pipe
+
+        // Capture output of the left command
+        StringWriter outputCapture = new StringWriter();
+        try (PrintWriter writer = new PrintWriter(outputCapture))
+        {
+            String leftCommand = leftCommandParts[0].toLowerCase();
+
+            switch (leftCommand)
+            {
+                case "pwd" -> writer.println(System.getProperty("user.dir"));
+                case "ls" ->
+                {
+                    File currentDir = new File(System.getProperty("user.dir"));
+                    String[] files = currentDir.list();
+                    if (files != null)
+                    {
+                        for (String file : files)
+                        {
+                            writer.println(file);
+                        }
+                    }
+                    else
+                    {
+                        writer.println("Error listing files in the directory.");
+                    }
+                }
+                case "cat" ->
+                {
+                    if (leftCommandParts.length < 2)
+                    {
+                        writer.println("No files specified for cat command.");
+                        break;
+                    }
+                    for (int i = 1; i < leftCommandParts.length; i++)
+                    {
+                        String filePath = leftCommandParts[i].replace("\"", "").trim();
+                        File file = new File(filePath);
+                        if (file.exists())
+                        {
+                            try (BufferedReader reader = new BufferedReader(new FileReader(file)))
+                            {
+                                String line;
+                                while ((line = reader.readLine()) != null)
+                                {
+                                    writer.println(line);
+                                }
+                            }
+                            catch (IOException e)
+                            {
+                                writer.println("Error reading file: " + filePath);
+                            }
+                        }
+                        else
+                        {
+                            writer.println("File not found: " + filePath);
+                        }
+                    }
+                }
+                default -> writer.println("Unknown command: " + leftCommand);
+            }
+        }
+
+        // Now, pass the captured output to the right command
+        String capturedOutput = outputCapture.toString();
+        if (rightCommandParts.length > 0)
+        {
+            String rightCommand = rightCommandParts[0].toLowerCase();
+            switch (rightCommand)
+            {
+                case "rmdir" ->
+                {
+                    // Handle removing directories from the captured output
+                    String[] dirNames = capturedOutput.split("\n");
+                    for (String dirName : dirNames)
+                    {
+                        String trimmedDirName = dirName.trim();
+                        File dir = new File(trimmedDirName);
+                        if (dir.exists())
+                        {
+                            if (dir.isDirectory())
+                            {
+                                boolean deleted = dir.delete();
+                                if (deleted)
+                                {
+                                    System.out.println("Removed directory: " + trimmedDirName);
+                                    changeToParentDirectory();
+                                }
+                                else
+                                {
+                                    System.out.println("Failed to remove directory (not empty or other error): " + trimmedDirName);
+                                }
+                            }
+                            else
+                            {
+                                System.out.println("Not a directory: " + trimmedDirName);
+                            }
+                        }
+                        else
+                        {
+                            System.out.println("Directory not found: " + trimmedDirName);
+                        }
+                    }
+                }
+                default -> System.out.println("Unknown command after pipe: " + rightCommand);
+            }
+        }
+    }
+
+    private static void changeToParentDirectory()
+    {
+        String currentDir = System.getProperty("user.dir");
+        File parentDir = new File(currentDir).getParentFile();
+        currentDirectory = parentDir;
+        if (parentDir != null && parentDir.exists())
+        {
+            System.setProperty("user.dir", currentDirectory.getAbsolutePath());
+            System.out.println("Moved to parent directory: " + currentDirectory.getAbsolutePath());
+        }
+        else
+        {
+            System.out.println("No parent directory found or it does not exist.");
         }
     }
 }

@@ -1,6 +1,7 @@
 package org.os;
 import java.util.Scanner;
 import java.util.Arrays;
+import java.io.File;
 
 public class CLI
 {
@@ -20,6 +21,8 @@ public class CLI
                 }
                 String[] commandParts = input.split(" (?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
                 boolean redirectOutput = false;
+                boolean redirectOutput_ex = false;
+                boolean pipe = false;
                 String outputFileName = null;
 
                 // Check for the presence of ">"
@@ -35,23 +38,51 @@ public class CLI
                         commandParts = Arrays.copyOfRange(commandParts, 0, i); // Keep only command parts before ">"
                         break;
                     }
+                    if (">>".equals(commandParts[i]))
+                    {
+                        redirectOutput_ex = true;
+                        if (i + 1 < commandParts.length)
+                        {
+                            outputFileName = commandParts[i + 1].replace("\"", "").trim(); // Get the output file name
+                        }
+                        commandParts = Arrays.copyOfRange(commandParts, 0, i); // Keep only command parts before ">"
+                        break;
+                    }
+                    if ("|".equals(commandParts[i]))
+                    {
+                        pipe = true;
+                        break;
+                    }
                 }
 
                 String command = commandParts[0].toLowerCase();
                 if (redirectOutput)
                 {
-                    SystemCommands.redirectOutput(command, commandParts, outputFileName);
+                    SystemCommands.redirectOutput(command, commandParts, outputFileName, scanner);
                 }
-                else {
-                    switch (command) {
+                else if (redirectOutput_ex)
+                {
+                    SystemCommands.redirectOutput_ex(command, commandParts, outputFileName, scanner);
+                }
+                else if(pipe)
+                {
+                    SystemCommands.pipe(commandParts);
+                }
+                else
+                {
+                    switch (command)
+                    {
                         case "pwd":
                             SystemCommands.pwd();
                             break;
 
                         case "cd":
-                            if (commandParts.length < 2) {
+                            if (commandParts.length < 2)
+                            {
                                 System.out.println("Usage: cd <directory>");
-                            } else {
+                            }
+                            else
+                            {
                                 // Join everything after "cd" to handle directory paths with spaces
                                 String path = String.join(" ", Arrays.copyOfRange(commandParts, 1, commandParts.length)).trim();
                                 path = path.replace("\"", ""); // Remove quotes if any
@@ -64,9 +95,12 @@ public class CLI
                             break;
 
                         case "mkdir":
-                            if (commandParts.length < 2) {
+                            if (commandParts.length < 2)
+                            {
                                 System.out.println("Usage: mkdir <directory_name>");
-                            } else {
+                            }
+                            else
+                            {
                                 // Join everything after "mkdir" to handle directory names with spaces
                                 String dirPath = String.join(" ", Arrays.copyOfRange(commandParts, 1, commandParts.length)).trim();
                                 SystemCommands.mkdir(dirPath);
@@ -74,9 +108,12 @@ public class CLI
                             break;
 
                         case "rmdir":
-                            if (commandParts.length < 2) {
+                            if (commandParts.length < 2)
+                            {
                                 System.out.println("Usage: rmdir <directory_name>");
-                            } else {
+                            }
+                            else
+                            {
                                 // Join everything after "rmdir" to handle directory paths with spaces
                                 String dirPath = String.join(" ", Arrays.copyOfRange(commandParts, 1, commandParts.length)).trim();
                                 dirPath = dirPath.replace("\"", ""); // Remove quotes if any
@@ -85,11 +122,15 @@ public class CLI
                             break;
 
                         case "touch":
-                            if (commandParts.length < 2) {
+                            if (commandParts.length < 2)
+                            {
                                 System.out.println("Usage: touch <file_name>");
-                            } else {
+                            }
+                            else
+                            {
                                 String[] filePaths = Arrays.copyOfRange(commandParts, 1, commandParts.length);
-                                for (int i = 0; i < filePaths.length; i++) {
+                                for (int i = 0; i < filePaths.length; i++)
+                                {
                                     filePaths[i] = filePaths[i].replace("\"", "").trim(); // Remove quotes and trim spaces
                                 }
                                 SystemCommands.touch(filePaths);
@@ -97,9 +138,12 @@ public class CLI
                             break;
 
                         case "mv":
-                            if (commandParts.length < 2) {
+                            if (commandParts.length < 2)
+                            {
                                 System.out.println("Usage: mv <source_files> <destination>");
-                            } else {
+                            }
+                            else
+                            {
                                 // Join everything after "mv" to handle multiple files and destination
                                 String[] filesToMove = Arrays.copyOfRange(commandParts, 1, commandParts.length);
                                 SystemCommands.mv(filesToMove);
@@ -107,16 +151,19 @@ public class CLI
                             break;
 
                         case "rm":
-                            if (commandParts.length < 2) {
+                            if (commandParts.length < 2)
+                            {
                                 System.out.println("Usage: rm <file(s)/directory(s)>");
-                            } else {
+                            }
+                            else
+                            {
                                 String[] filesTo_del = Arrays.copyOfRange(commandParts, 1, commandParts.length);
                                 SystemCommands.rm(filesTo_del);
                             }
                             break;
 
                         case "cat":
-                            SystemCommands.cat(commandParts);
+                            SystemCommands.cat(commandParts, scanner);
                             break;
 
                         case "exit":
