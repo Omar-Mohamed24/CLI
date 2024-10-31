@@ -6,11 +6,13 @@ import java.util.Scanner;
 public class SystemCommands
 {
     private static File currentDirectory = new File(System.getProperty("user.dir"));
+    public static String output ="";
 
     public static void pwd()
     {
         // Get the current working directory
         System.out.println(currentDirectory.getAbsolutePath());
+        SystemCommands.output=System.getProperty("user.dir");
     }
 
     public static void cd(String newDir)
@@ -90,6 +92,7 @@ public class SystemCommands
         for (File file : files)
         {
             System.out.println(file.getName());
+            SystemCommands.output += file.getName() + "\n";
         }
     }
 
@@ -102,6 +105,7 @@ public class SystemCommands
         if (newDir.exists())
         {
             System.out.println("Directory already exists: " + dirPath);
+            SystemCommands.output = "Directory already exists: " + dirPath + "\n";
         }
         else
         {
@@ -125,10 +129,12 @@ public class SystemCommands
         if (!dir.exists())
         {
             System.out.println("Directory does not exist: " + dirPath);
+            SystemCommands.output = "Directory does not exist: " + dirPath+ "\n";
         }
         else if (!dir.isDirectory())
         {
             System.out.println("Not a directory: " + dirPath);
+            SystemCommands.output = "Not a directory: " + dirPath + "\n";
         }
         else
         {
@@ -141,6 +147,7 @@ public class SystemCommands
             else if (files.length > 0)
             {
                 System.out.println("Directory is not empty: " + dirPath);
+                SystemCommands.output = "Directory is not empty: " + dirPath + "\n";
             }
             else
             {
@@ -151,6 +158,7 @@ public class SystemCommands
                 if (dir.delete())
                 {
                     System.out.println("Directory deleted: " + dirPath);
+                    SystemCommands.output = "Directory deleted: " + dirPath + "\n";
                 }
                 else
                 {
@@ -172,6 +180,7 @@ public class SystemCommands
                 if (file.createNewFile())
                 {
                     System.out.println("File created: " + file.getAbsolutePath());
+                    SystemCommands.output = "File created: " + file + "\n";
                 }
                 else
                 {
@@ -179,6 +188,7 @@ public class SystemCommands
                     if (file.setLastModified(System.currentTimeMillis()))
                     {
                         System.out.println("Timestamp updated for: " + file.getAbsolutePath());
+                        SystemCommands.output = "Timestamp updated for: " + file.getAbsolutePath() + "\n";
                     }
                     else
                     {
@@ -315,6 +325,7 @@ public class SystemCommands
             if (!file.exists())
             {
                 System.out.println("File or directory does not exist: " + path);
+                SystemCommands.output = "File or directory does not exist: " + path + "\n";
                 continue; // Skip to the next
             }
 
@@ -357,6 +368,7 @@ public class SystemCommands
                 if (file.delete())
                 {
                     System.out.println("Removed file: " + path);
+                    SystemCommands.output = "Removed file: " + path + "\n";
                 }
                 else
                 {
@@ -395,6 +407,7 @@ public class SystemCommands
         if (dir.delete())
         {
             System.out.println("Removed directory: " + dir.getAbsolutePath());
+            SystemCommands.output = "Removed directory: " + dir.getAbsolutePath() + "\n";
         }
         else
         {
@@ -405,7 +418,7 @@ public class SystemCommands
     public static void cat(String[] commandParts, Scanner scanner)
     {
         // Check if files are provided or read from input
-        if (commandParts.length < 2)
+        if (commandParts.length < 1)
         {
             System.out.println("No files specified. Reading from standard input (Type 'exit' to stop):");
             while (true)
@@ -421,7 +434,7 @@ public class SystemCommands
         }
 
         // Process provided file arguments
-        for (int i = 1; i < commandParts.length; i++)
+        for (int i = 0; i < commandParts.length; i++)
         {
             String filePath = commandParts[i].replace("\"", "").trim(); // Remove quotes if any
             File file = new File(filePath);
@@ -443,7 +456,8 @@ public class SystemCommands
                 String line;
                 while ((line = reader.readLine()) != null)
                 {
-                    System.out.println(line); // Print each line
+                    System.out.println(line);
+                    SystemCommands.output += line + "\n";
                 }
             }
             catch (IOException e)
@@ -539,6 +553,7 @@ public class SystemCommands
         if (!outputFile.exists())
         {
             System.out.println("Error: Output file does not exist.");
+            SystemCommands.output = "Error: Output file does not exist." + "\n";
             return; // Exit the method if the file does not exist
         }
 

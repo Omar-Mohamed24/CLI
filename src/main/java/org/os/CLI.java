@@ -163,7 +163,8 @@ public class CLI
                             break;
 
                         case "cat":
-                            SystemCommands.cat(commandParts, scanner);
+                            String[] files = Arrays.copyOfRange(commandParts, 1, commandParts.length);
+                            SystemCommands.cat(files, scanner);
                             break;
 
                         case "exit":
